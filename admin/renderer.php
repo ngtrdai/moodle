@@ -617,7 +617,7 @@ class core_admin_renderer extends plugin_renderer_base {
      * @param bool $croninfrequent
      * @return string HTML to output.
      */
-    public function cron_infrequent_warning(bool $croninfrequent) : string {
+    public function cron_infrequent_warning(bool $croninfrequent): string {
         global $CFG;
 
         if (!$croninfrequent) {
@@ -1004,7 +1004,7 @@ class core_admin_renderer extends plugin_renderer_base {
     function upgrade_reload($url) {
         return html_writer::empty_tag('br') .
                 html_writer::tag('div',
-                    html_writer::link($url, $this->pix_icon('i/reload', '', '', array('class' => 'icon icon-pre')) .
+                    html_writer::link($url, $this->pix_icon('i/reload', '', '', ['class' => 'icon']) .
                             get_string('reload'), array('title' => get_string('reload'))),
                 array('class' => 'continuebutton')) . html_writer::empty_tag('br');
     }
@@ -2055,8 +2055,10 @@ class core_admin_renderer extends plugin_renderer_base {
                         // We are checking installed & enabled things
                         if ($environment_result->getLevel() == 'required') {
                             $stringtouse = 'environmentrequirecustomcheck';
-                        } else {
+                        } else if ($environment_result->getLevel() == 'optional') {
                             $stringtouse = 'environmentrecommendcustomcheck';
+                        } else {
+                            $stringtouse = 'environmentshouldfixcustomcheck';
                         }
 
                     } else if ($environment_result->getPart() == 'php_setting') {
@@ -2087,7 +2089,8 @@ class core_admin_renderer extends plugin_renderer_base {
                         if ($status) {                                          //Handle ok result (ok)
                             $status = get_string('statusok');
                         } else {
-                            if ($environment_result->getLevel() == 'optional') {//Handle check result (warning)
+                            // Handle check result (warning).
+                            if (in_array($environment_result->getLevel(), ['optional', 'recommended'])) {
                                 $status = get_string('check');
                                 $warningline = true;
                             } else {                                            //Handle error result (error)
@@ -2207,7 +2210,7 @@ class core_admin_renderer extends plugin_renderer_base {
         $out = format_text(get_string('registerwithmoodleorginfo', 'core_hub'), FORMAT_MARKDOWN);
 
         $out .= html_writer::link(
-            new moodle_url('/admin/settings.php', ['section' => 'moodleservices']),
+            MOODLE_PRODUCTURL.'/solutions/moodle-app/',
             $this->output->pix_icon('i/info', '').' '.get_string('registerwithmoodleorginfoapp', 'core_hub'),
             ['class' => 'btn btn-link', 'role' => 'opener', 'target' => '_href']
         );

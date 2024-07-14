@@ -28,6 +28,7 @@ Feature: In an assignment, teacher can view the feedback for a previous attempt.
       | assignsubmission_file_maxsizebytes | 102400               |
       | assignfeedback_editpdf_enabled     | 1                    |
       | submissiondrafts                   | 0                    |
+      | maxattempts                        | -1                   |
       | attemptreopenmethod                | manual               |
     And the following "mod_assign > submission" exists:
       | assign  | Test assignment name                                                                                              |
@@ -36,7 +37,9 @@ Feature: In an assignment, teacher can view the feedback for a previous attempt.
 
     When I am on the "Test assignment name" Activity page logged in as teacher1
     And I follow "View all submissions"
+    And I change window size to "large"
     And I click on "Grade" "link" in the "Submitted for grading" "table_row"
+    And I change window size to "medium"
     Then I should see "Page 1 of 3"
     And I click on ".navigate-next-button" "css_element"
     And I should see "Page 2 of 3"

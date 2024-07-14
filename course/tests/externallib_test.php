@@ -39,8 +39,7 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
  * @copyright  2012 Jerome Mouneyrac
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class externallib_test extends externallib_advanced_testcase {
-    //core_course_externallib_testcase
+final class externallib_test extends externallib_advanced_testcase {
 
     /**
      * Tests set up
@@ -48,12 +47,13 @@ class externallib_test extends externallib_advanced_testcase {
     protected function setUp(): void {
         global $CFG;
         require_once($CFG->dirroot . '/course/externallib.php');
+        parent::setUp();
     }
 
     /**
      * Test create_categories
      */
-    public function test_create_categories() {
+    public function test_create_categories(): void {
 
         global $DB;
 
@@ -131,7 +131,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test delete categories
      */
-    public function test_delete_categories() {
+    public function test_delete_categories(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -174,7 +174,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get categories
      */
-    public function test_get_categories() {
+    public function test_get_categories(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -305,7 +305,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test update_categories
      */
-    public function test_update_categories() {
+    public function test_update_categories(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -368,7 +368,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test update_categories method for moving categories
      */
-    public function test_update_categories_moving() {
+    public function test_update_categories_moving(): void {
         $this->resetAfterTest();
 
         // Create data.
@@ -406,7 +406,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test create_courses numsections
      */
-    public function test_create_course_numsections() {
+    public function test_create_course_numsections(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -440,7 +440,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test create_courses
      */
-    public function test_create_courses() {
+    public function test_create_courses(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -608,7 +608,7 @@ class externallib_test extends externallib_advanced_testcase {
      *
      * @return array
      */
-    public function course_empty_field_provider(): array {
+    public static function course_empty_field_provider(): array {
         return [
             [[
                 'fullname' => '',
@@ -677,7 +677,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test delete_courses
      */
-    public function test_delete_courses() {
+    public function test_delete_courses(): void {
         global $DB, $USER;
 
         $this->resetAfterTest(true);
@@ -737,7 +737,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_courses
      */
-    public function test_get_courses () {
+    public function test_get_courses(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -897,7 +897,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_courses without capability
      */
-    public function test_get_courses_without_capability() {
+    public function test_get_courses_without_capability(): void {
         $this->resetAfterTest(true);
 
         $course1 = $this->getDataGenerator()->create_course();
@@ -923,7 +923,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test search_courses
      */
-    public function test_search_courses () {
+    public function test_search_courses(): void {
 
         global $DB;
 
@@ -1149,7 +1149,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents
      */
-    public function test_get_course_contents() {
+    public function test_get_course_contents(): void {
         global $CFG;
         $this->resetAfterTest(true);
 
@@ -1164,6 +1164,7 @@ class externallib_test extends externallib_advanced_testcase {
             'showdate' => 1,
         ];
         $resource = self::getDataGenerator()->create_module('resource', $record);
+        $h5pactivity = self::getDataGenerator()->create_module('h5pactivity', ['course' => $course]);
 
         // We first run the test as admin.
         $this->setAdminUser();
@@ -1195,6 +1196,8 @@ class externallib_test extends externallib_advanced_testcase {
                         MOD_PURPOSE_OTHER
                     ), $module['purpose']
                 );
+                $this->assertFalse($module['branded']);
+                $this->assertStringContainsString('trackingtype', $module['customdata']);   // The customdata is JSON encoded.
                 $testexecuted = $testexecuted + 2;
             } else if ($module['id'] == $labelcm->id and $module['modname'] == 'label') {
                 $cm = $modinfo->cms[$labelcm->id];
@@ -1205,7 +1208,6 @@ class externallib_test extends externallib_advanced_testcase {
                 $this->assertEquals(context_module::instance($labelcm->id)->id, $module['contextid']);
                 $this->assertTrue($module['noviewlink']);
                 $this->assertNotEmpty($module['description']);  // Label always prints the description.
-                $testexecuted = $testexecuted + 1;
                 $this->assertEquals(
                     plugin_supports(
                         'mod',
@@ -1214,11 +1216,12 @@ class externallib_test extends externallib_advanced_testcase {
                         MOD_PURPOSE_OTHER
                     ), $module['purpose']
                 );
+                $this->assertFalse($module['branded']);
+                $testexecuted = $testexecuted + 1;
             } else if ($module['id'] == $datacm->id and $module['modname'] == 'data') {
                 $this->assertStringContainsString('customcompletionrules', $module['customdata']);
                 $this->assertFalse($module['noviewlink']);
                 $this->assertArrayNotHasKey('description', $module);
-                $testexecuted = $testexecuted + 1;
                 $this->assertEquals(
                     plugin_supports(
                         'mod',
@@ -1227,12 +1230,13 @@ class externallib_test extends externallib_advanced_testcase {
                         MOD_PURPOSE_OTHER
                     ), $module['purpose']
                 );
+                $this->assertFalse($module['branded']);
+                $testexecuted = $testexecuted + 1;
             } else if ($module['instance'] == $resource->id && $module['modname'] == 'resource') {
                 // Resources have both, afterlink for the size and the update date and activitybadge for the file type.
                 $this->assertStringContainsString('32 bytes', $module['afterlink']);
                 $this->assertEquals('TXT', $module['activitybadge']['badgecontent']);
                 $this->assertEquals('badge-none', $module['activitybadge']['badgestyle']);
-                $testexecuted = $testexecuted + 1;
                 $this->assertEquals(
                     plugin_supports(
                         'mod',
@@ -1241,6 +1245,19 @@ class externallib_test extends externallib_advanced_testcase {
                         MOD_PURPOSE_OTHER
                     ), $module['purpose']
                 );
+                $this->assertFalse($module['branded']);
+                $testexecuted = $testexecuted + 1;
+            } else if ($module['instance'] == $h5pactivity->id && $module['modname'] == 'h5pactivity') {
+                $this->assertEquals(
+                    plugin_supports(
+                        'mod',
+                        'h5pactivity',
+                        FEATURE_MOD_PURPOSE,
+                        MOD_PURPOSE_OTHER
+                    ), $module['purpose']
+                );
+                $this->assertTrue($module['branded']);
+                $testexecuted = $testexecuted + 1;
             }
         }
         foreach ($sections[2]['modules'] as $module) {
@@ -1253,10 +1270,10 @@ class externallib_test extends externallib_advanced_testcase {
         $CFG->forum_allowforcedreadtracking = 0;    // Recover original value.
         forum_tp_count_forum_unread_posts($forumcm, $course, true);    // Reset static cache for further tests.
 
-        $this->assertEquals(6, $testexecuted);
+        $this->assertEquals(7, $testexecuted);
         $this->assertEquals(0, $sections[0]['section']);
 
-        $this->assertCount(7, $sections[0]['modules']);
+        $this->assertCount(8, $sections[0]['modules']);
         $this->assertCount(1, $sections[1]['modules']);
         $this->assertCount(1, $sections[2]['modules']);
         $this->assertCount(1, $sections[3]['modules']); // One module for the section with availability restrictions.
@@ -1282,7 +1299,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents as student
      */
-    public function test_get_course_contents_student() {
+    public function test_get_course_contents_student(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -1330,7 +1347,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents excluding modules
      */
-    public function test_get_course_contents_excluding_modules() {
+    public function test_get_course_contents_excluding_modules(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1348,7 +1365,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents excluding contents
      */
-    public function test_get_course_contents_excluding_contents() {
+    public function test_get_course_contents_excluding_contents(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1372,7 +1389,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents filtering by section number
      */
-    public function test_get_course_contents_section_number() {
+    public function test_get_course_contents_section_number(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1390,7 +1407,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents filtering by cmid
      */
-    public function test_get_course_contents_cmid() {
+    public function test_get_course_contents_cmid(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1410,7 +1427,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents filtering by cmid and section
      */
-    public function test_get_course_contents_section_cmid() {
+    public function test_get_course_contents_section_cmid(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1432,7 +1449,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents filtering by modname
      */
-    public function test_get_course_contents_modname() {
+    public function test_get_course_contents_modname(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1451,7 +1468,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents filtering by modname
      */
-    public function test_get_course_contents_modid() {
+    public function test_get_course_contents_modid(): void {
         $this->resetAfterTest(true);
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1474,7 +1491,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents returns downloadcontent value.
      */
-    public function test_get_course_contents_downloadcontent() {
+    public function test_get_course_contents_downloadcontent(): void {
         $this->resetAfterTest();
 
         list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
@@ -1496,7 +1513,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get course contents completion manual
      */
-    public function test_get_course_contents_completion_manual() {
+    public function test_get_course_contents_completion_manual(): void {
         global $CFG;
         $this->resetAfterTest(true);
 
@@ -1570,7 +1587,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get course contents completion auto
      */
-    public function test_get_course_contents_completion_auto() {
+    public function test_get_course_contents_completion_auto(): void {
         global $CFG;
         $this->resetAfterTest(true);
 
@@ -1612,7 +1629,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test mimetype is returned for resources with showtype set.
      */
-    public function test_get_course_contents_including_mimetype() {
+    public function test_get_course_contents_including_mimetype(): void {
         $this->resetAfterTest(true);
 
         $this->setAdminUser();
@@ -1634,7 +1651,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test contents info is returned.
      */
-    public function test_get_course_contents_contentsinfo() {
+    public function test_get_course_contents_contentsinfo(): void {
         global $USER;
 
         $this->resetAfterTest(true);
@@ -1712,7 +1729,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents when hidden sections are displayed.
      */
-    public function test_get_course_contents_hiddensections() {
+    public function test_get_course_contents_hiddensections(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -1765,7 +1782,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get course contents dates.
      */
-    public function test_get_course_contents_dates() {
+    public function test_get_course_contents_dates(): void {
         $this->resetAfterTest(true);
 
         $this->setAdminUser();
@@ -1818,7 +1835,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_contents for courses with invalid course format.
      */
-    public function test_get_course_contents_invalid_format() {
+    public function test_get_course_contents_invalid_format(): void {
         global $DB;
         $this->resetAfterTest();
 
@@ -1835,7 +1852,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test duplicate_course
      */
-    public function test_duplicate_course() {
+    public function test_duplicate_course(): void {
         $this->resetAfterTest(true);
 
         // Create one course with three modules.
@@ -1881,7 +1898,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test update_courses
      */
-    public function test_update_courses() {
+    public function test_update_courses(): void {
         global $DB, $CFG, $USER, $COURSE;
 
         // Get current $COURSE to be able to restore it later (defaults to $SITE). We need this
@@ -2183,7 +2200,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test delete course_module.
      */
-    public function test_delete_modules() {
+    public function test_delete_modules(): void {
         global $DB;
 
         // Ensure we reset the data after this test.
@@ -2283,7 +2300,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test import_course into an empty course
      */
-    public function test_import_course_empty() {
+    public function test_import_course_empty(): void {
         global $USER;
 
         $this->resetAfterTest(true);
@@ -2330,7 +2347,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test import_course into an filled course
      */
-    public function test_import_course_filled() {
+    public function test_import_course_filled(): void {
         global $USER;
 
         $this->resetAfterTest(true);
@@ -2381,7 +2398,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test import_course with only blocks set to backup
      */
-    public function test_import_course_blocksonly() {
+    public function test_import_course_blocksonly(): void {
         global $USER, $DB;
 
         $this->resetAfterTest(true);
@@ -2422,7 +2439,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test import_course into an filled course, deleting content.
      */
-    public function test_import_course_deletecontent() {
+    public function test_import_course_deletecontent(): void {
         global $USER;
         $this->resetAfterTest(true);
 
@@ -2470,7 +2487,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Ensure import_course handles incorrect deletecontent option correctly.
      */
-    public function test_import_course_invalid_deletecontent_option() {
+    public function test_import_course_invalid_deletecontent_option(): void {
         $this->resetAfterTest(true);
 
         $course1  = self::getDataGenerator()->create_course();
@@ -2485,7 +2502,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test view_course function
      */
-    public function test_view_course() {
+    public function test_view_course(): void {
 
         $this->resetAfterTest();
 
@@ -2522,7 +2539,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_module
      */
-    public function test_get_course_module() {
+    public function test_get_course_module(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -2639,7 +2656,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_course_module_by_instance
      */
-    public function test_get_course_module_by_instance() {
+    public function test_get_course_module_by_instance(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -2712,7 +2729,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_user_navigation_options
      */
-    public function test_get_user_navigation_options() {
+    public function test_get_user_navigation_options(): void {
         global $USER;
 
         $this->resetAfterTest();
@@ -2766,7 +2783,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_user_administration_options
      */
-    public function test_get_user_administration_options() {
+    public function test_get_user_administration_options(): void {
         global $USER;
 
         $this->resetAfterTest();
@@ -2833,7 +2850,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_courses_by_fields
      */
-    public function test_get_courses_by_field() {
+    public function test_get_courses_by_field(): void {
         global $DB, $USER;
         $this->resetAfterTest(true);
 
@@ -3140,12 +3157,12 @@ class externallib_test extends externallib_advanced_testcase {
         $this->assertNotContains('communicationroomurl', $course);
     }
 
-    public function test_get_courses_by_field_invalid_field() {
+    public function test_get_courses_by_field_invalid_field(): void {
         $this->expectException('invalid_parameter_exception');
         $result = core_course_external::get_courses_by_field('zyx', 'x');
     }
 
-    public function test_get_courses_by_field_invalid_courses() {
+    public function test_get_courses_by_field_invalid_courses(): void {
         $result = core_course_external::get_courses_by_field('id', '-1');
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(0, $result['courses']);
@@ -3154,7 +3171,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_courses_by_field_invalid_theme_and_lang
      */
-    public function test_get_courses_by_field_invalid_theme_and_lang() {
+    public function test_get_courses_by_field_invalid_theme_and_lang(): void {
         $this->resetAfterTest(true);
         $this->setAdminUser();
 
@@ -3166,15 +3183,31 @@ class externallib_test extends externallib_advanced_testcase {
     }
 
 
-    public function test_check_updates() {
+    public function test_check_updates(): void {
         global $DB;
         $this->resetAfterTest(true);
         $this->setAdminUser();
 
         // Create different types of activities.
         $course  = self::getDataGenerator()->create_course();
-        $tocreate = array('assign', 'book', 'choice', 'folder', 'forum', 'glossary', 'imscp', 'label', 'lti', 'page', 'quiz',
-                            'resource', 'scorm', 'survey', 'url', 'wiki');
+        $tocreate = [
+            'assign',
+            'book',
+            'choice',
+            'folder',
+            'forum',
+            'glossary',
+            'imscp',
+            'label',
+            'lesson',
+            'lti',
+            'page',
+            'quiz',
+            'resource',
+            'scorm',
+            'url',
+            'wiki',
+        ];
 
         $modules = array();
         foreach ($tocreate as $modname) {
@@ -3270,7 +3303,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test cases for the get_enrolled_courses_by_timeline_classification test.
      */
-    public function get_get_enrolled_courses_by_timeline_classification_test_cases():array {
+    public static function get_get_enrolled_courses_by_timeline_classification_test_cases(): array {
         $now = time();
         $day = 86400;
 
@@ -3532,16 +3565,6 @@ class externallib_test extends externallib_advanced_testcase {
                 'classification' => 'all',
                 'limit' => 5,
                 'offset' => 5,
-                'sort' => "ul.timeaccess abcdasc",
-                'expectedcourses' => [],
-                'expectednextoffset' => 0,
-                'expectedexception' => 'Invalid sort direction in $sort parameter in enrol_get_my_courses()',
-            ],
-            'all limit and offset with wrong sort direction' => [
-                'coursedata' => $coursedata,
-                'classification' => 'all',
-                'limit' => 5,
-                'offset' => 5,
                 'sort' => "ul.timeaccess.foo ascd",
                 'expectedcourses' => [],
                 'expectednextoffset' => 0,
@@ -3553,16 +3576,6 @@ class externallib_test extends externallib_advanced_testcase {
                 'limit' => 5,
                 'offset' => 5,
                 'sort' => "foobar",
-                'expectedcourses' => [],
-                'expectednextoffset' => 0,
-                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()',
-            ],
-            'all limit and offset with wrong field name' => [
-                'coursedata' => $coursedata,
-                'classification' => 'all',
-                'limit' => 5,
-                'offset' => 5,
-                'sort' => "ul.foobar",
                 'expectedcourses' => [],
                 'expectednextoffset' => 0,
                 'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()',
@@ -3714,7 +3727,7 @@ class externallib_test extends externallib_advanced_testcase {
         $expectednextoffset,
         $expectedexception = null,
         $searchvalue = null
-    ) {
+    ): void {
         $this->resetAfterTest();
         $generator = $this->getDataGenerator();
 
@@ -3764,7 +3777,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test the get_recent_courses function.
      */
-    public function test_get_recent_courses() {
+    public function test_get_recent_courses(): void {
         global $USER, $DB;
 
         $this->resetAfterTest();
@@ -3846,7 +3859,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get enrolled users by cmid function.
      */
-    public function test_get_enrolled_users_by_cmid() {
+    public function test_get_enrolled_users_by_cmid(): void {
         global $PAGE;
         $this->resetAfterTest(true);
 
@@ -3946,7 +3959,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Verify that content items can be added to user favourites.
      */
-    public function test_add_content_item_to_user_favourites() {
+    public function test_add_content_item_to_user_favourites(): void {
         $this->resetAfterTest();
 
         $course = $this->getDataGenerator()->create_course();
@@ -3984,7 +3997,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Verify that content items can be removed from user favourites.
      */
-    public function test_remove_content_item_from_user_favourites() {
+    public function test_remove_content_item_from_user_favourites(): void {
         $this->resetAfterTest();
 
         $course = $this->getDataGenerator()->create_course();
@@ -4024,7 +4037,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test the web service returning course content items for inclusion in activity choosers, etc.
      */
-    public function test_get_course_content_items() {
+    public function test_get_course_content_items(): void {
         $this->resetAfterTest();
 
         $course  = self::getDataGenerator()->create_course();
@@ -4050,7 +4063,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test the web service returning course content items, specifically in case where the user can't manage activities.
      */
-    public function test_get_course_content_items_no_permission_to_manage() {
+    public function test_get_course_content_items_no_permission_to_manage(): void {
         $this->resetAfterTest();
 
         $course  = self::getDataGenerator()->create_course();
@@ -4067,7 +4080,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test toggling the recommendation of an activity.
      */
-    public function test_toggle_activity_recommendation() {
+    public function test_toggle_activity_recommendation(): void {
         global $CFG;
 
         $this->resetAfterTest();

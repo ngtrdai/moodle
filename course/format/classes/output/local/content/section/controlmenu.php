@@ -71,19 +71,55 @@ class controlmenu implements named_templatable, renderable {
      * @return array data context for a mustache template
      */
     public function export_for_template(\renderer_base $output): stdClass {
-
-        $section = $this->section;
-
-        $controls = $this->section_control_items();
-
-        if (empty($controls)) {
+        $menu = $this->get_action_menu($output);
+        if (empty($menu)) {
             return new stdClass();
+        }
+
+        $data = (object)[
+            'menu' => $output->render($menu),
+            'hasmenu' => true,
+            'id' => $this->section->id,
+        ];
+
+        return $data;
+    }
+
+    /**
+     * Generate the action menu element depending on the section.
+     *
+     * Sections controlled by a plugin will delegate the control menu to the plugin.
+     *
+     * @param \renderer_base $output typically, the renderer that's calling this function
+     * @return action_menu|null the activity action menu or null if no action menu is available
+     */
+    public function get_action_menu(\renderer_base $output): ?action_menu {
+        $sectiondelegate = $this->section->get_component_instance();
+        if ($sectiondelegate) {
+            return $sectiondelegate->get_section_action_menu($this->format, $this, $output);
+        }
+        return $this->get_default_action_menu($output);
+    }
+
+    /**
+     * Generate the default section action menu.
+     *
+     * This method is public in case some block needs to modify the menu before output it.
+     *
+     * @param \renderer_base $output typically, the renderer that's calling this function
+     * @return action_menu|null the activity action menu
+     */
+    public function get_default_action_menu(\renderer_base $output): ?action_menu {
+        $controls = $this->section_control_items();
+        if (empty($controls)) {
+            return null;
         }
 
         // Convert control array into an action_menu.
         $menu = new action_menu();
         $menu->set_kebab_trigger(get_string('edit'));
         $menu->attributes['class'] .= ' section-actions';
+        $menu->attributes['data-sectionid'] = $this->section->id;
         foreach ($controls as $value) {
             $url = empty($value['url']) ? '' : $value['url'];
             $icon = empty($value['icon']) ? '' : $value['icon'];
@@ -98,14 +134,7 @@ class controlmenu implements named_templatable, renderable {
             );
             $menu->add($al);
         }
-
-        $data = (object)[
-            'menu' => $output->render($menu),
-            'hasmenu' => true,
-            'id' => $section->id,
-        ];
-
-        return $data;
+        return $menu;
     }
 
     /**
@@ -138,7 +167,7 @@ class controlmenu implements named_templatable, renderable {
         $controls = [];
 
         // Only show the view link if we are not already in the section view page.
-        if ($PAGE->pagetype !== 'section-view-' . $course->format) {
+        if ($PAGE->pagetype !== 'course-view-section-' . $course->format) {
             $controls['view'] = [
                 'url'   => new moodle_url('/course/section.php', ['id' => $section->id]),
                 'icon' => 'i/viewsection',
@@ -165,19 +194,21 @@ class controlmenu implements named_templatable, renderable {
                 'attr' => ['class' => 'icon edit'],
             ];
 
-            $duplicatesectionurl = clone($baseurl);
-            $duplicatesectionurl->param('section', $section->section);
-            $duplicatesectionurl->param('duplicatesection', $section->section);
-            if (!is_null($sectionreturn)) {
-                $duplicatesectionurl->param('sr', $sectionreturn);
+            if ($section->section) {
+                $duplicatesectionurl = clone($baseurl);
+                $duplicatesectionurl->param('sectionid', $section->id);
+                $duplicatesectionurl->param('duplicatesection', 1);
+                if (!is_null($sectionreturn)) {
+                    $duplicatesectionurl->param('sr', $sectionreturn);
+                }
+                $controls['duplicate'] = [
+                    'url' => $duplicatesectionurl,
+                    'icon' => 't/copy',
+                    'name' => get_string('duplicate'),
+                    'pixattr' => ['class' => ''],
+                    'attr' => ['class' => 'icon duplicate'],
+                ];
             }
-            $controls['duplicate'] = [
-                'url' => $duplicatesectionurl,
-                'icon' => 't/copy',
-                'name' => get_string('duplicate'),
-                'pixattr' => ['class' => ''],
-                'attr' => ['class' => 'icon duplicate'],
-            ];
         }
 
         if ($section->section) {

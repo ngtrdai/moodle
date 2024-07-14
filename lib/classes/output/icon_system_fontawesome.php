@@ -14,21 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains class \core\output\icon_system
- *
- * @package    core
- * @category   output
- * @copyright  2016 Damyon Wiese
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 namespace core\output;
-
-use renderer_base;
-use pix_icon;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Class allowing different systems for mapping and rendering icons.
@@ -44,7 +30,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class icon_system_fontawesome extends icon_system_font {
-
     /**
      * @var array $map Cached map of moodle icon names to font awesome icon names.
      */
@@ -215,8 +200,10 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/contentbank' => 'fa-paint-brush',
             'core:i/dashboard' => 'fa-tachometer',
             'core:i/categoryevent' => 'fa-cubes',
+            'core:i/chartbar' => 'fa-chart-bar',
             'core:i/course' => 'fa-graduation-cap',
             'core:i/courseevent' => 'fa-graduation-cap',
+            'core:i/cloudupload' => 'fa-cloud-upload',
             'core:i/customfield' => 'fa-hand-o-right',
             'core:i/db' => 'fa-database',
             'core:i/delete' => 'fa-trash',
@@ -244,6 +231,9 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/link' => 'fa-link',
             'core:i/externallink' => 'fa-external-link',
             'core:i/files' => 'fa-file',
+            'core:i/file_plus' => 'fa-file-circle-plus',
+            'core:i/file_export' => 'fa-file-export',
+            'core:i/file_import' => 'fa-file-import',
             'core:i/filter' => 'fa-filter',
             'core:i/flagged' => 'fa-flag',
             'core:i/folder' => 'fa-folder',
@@ -263,8 +253,8 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/info' => 'fa-info',
             'core:i/invalid' => 'fa-times text-danger',
             'core:i/item' => 'fa-circle',
-            'core:i/loading' => 'fa-circle-o-notch fa-spin',
-            'core:i/loading_small' => 'fa-circle-o-notch fa-spin',
+            'core:i/loading' => 'fa-circle-o-notch fa-spin fa-sm',
+            'core:i/loading_small' => 'fa-circle-o-notch fa-spin fa-sm',
             'core:i/location' => 'fa-map-marker',
             'core:i/lock' => 'fa-lock',
             'core:i/log' => 'fa-list-alt',
@@ -468,7 +458,7 @@ class icon_system_fontawesome extends icon_system_font {
 
             // Create different mapping keys for different icon system classes, there may be several different
             // themes on the same site.
-            $mapkey = 'mapping_'.preg_replace('/[^a-zA-Z0-9_]/', '_', get_class($this));
+            $mapkey = 'mapping_' . preg_replace('/[^a-zA-Z0-9_]/', '_', get_class($this));
             $this->map = $cache->get($mapkey);
 
             if (empty($this->map)) {
@@ -485,16 +475,16 @@ class icon_system_fontawesome extends icon_system_font {
                 }
                 $cache->set($mapkey, $this->map);
             }
-
         }
         return $this->map;
     }
 
-
+    #[\Override]
     public function get_amd_name() {
         return 'core/icon_system_fontawesome';
     }
 
+    #[\Override]
     public function render_pix_icon(renderer_base $output, pix_icon $icon) {
         $subtype = 'pix_icon_fontawesome';
         $subpix = new $subtype($icon);
@@ -516,5 +506,4 @@ class icon_system_fontawesome extends icon_system_font {
 
         return $output->render_from_template('core/pix_icon_fontawesome', $data);
     }
-
 }

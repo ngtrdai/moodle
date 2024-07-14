@@ -314,12 +314,8 @@ a.autolink {
     display: none;
 }
 
-.visibleifjs {
+body:not(.jsenabled) .visibleifjs {
     display: none;
-}
-
-.jsenabled .visibleifjs {
-    display: inline;
 }
 
 .jsenabled .collapsibleregion {
@@ -381,8 +377,8 @@ img.resize {
 }
 /* Icon styles */
 img.activityicon {
-    height: 24px;
-    width: 24px;
+    height: 32px;
+    width: 32px;
     vertical-align: middle;
 }
 
@@ -393,7 +389,7 @@ img.activityicon {
 #maincontent {
     display: block;
     height: 1px;
-    overflow: hidden;
+    overflow: clip;
 }
 
 img.uihint {
@@ -1521,8 +1517,8 @@ audio.mediaplugin_html5audio {
         .icon {
             display: block;
             font-size: 3em;
-            height: 1em;
-            width: 1em;
+            max-height: 3em;
+            max-width: 3em;
         }
     }
     .carousel-item .loading-icon .icon {
@@ -1540,6 +1536,8 @@ audio.mediaplugin_html5audio {
         .icon {
             height: 2.5rem;
             width: 6rem;
+            max-height: 2.5rem;
+            max-width: 6rem;
             margin-bottom: .6rem;
         }
     }
@@ -1953,24 +1951,14 @@ nav.navbar .logo img {
     overflow: hidden;
     padding: 0.25rem 0;
 
-    display: flex;
-
     .page-header-image {
         & > a {
             display: inline-block;
         }
-    }
-
-    .page-header-headings,
-    .header-button-group {
-        position: relative;
-        line-height: 24px;
-        vertical-align: middle;
-    }
-
-    .header-button-group {
-        display: block;
-        float: left;
+        .userinitials,
+        .userpicture {
+            margin-right: map-get($spacers, 3);
+        }
     }
 }
 
@@ -1984,6 +1972,10 @@ a.disabled {
     cursor: default;
     font-style: italic;
     color: $text-muted;
+}
+
+a.btn.disabled {
+    opacity: 1;
 }
 
 body.lockscroll {
@@ -2208,6 +2200,8 @@ $footer-link-color: $bg-inverse-link-color !default;
     a {
         color: $footer-link-color;
         text-decoration: underline;
+        padding-top: map-get($spacers, 1);
+        padding-bottom: map-get($spacers, 1);
 
         .icon {
             color: $footer-link-color;
@@ -2332,9 +2326,9 @@ $footer-link-color: $bg-inverse-link-color !default;
         transform: translate(-50%, -50%);
 
         .icon {
-            height: 30px;
-            width: 30px;
-            font-size: 30px;
+            max-height: 2em;
+            max-width: 2em;
+            font-size: 2em;
         }
     }
 }
@@ -2455,11 +2449,6 @@ input[disabled] {
     cursor: not-allowed;
 }
 
-.custom-select {
-    width: auto;
-    max-width: 100%;
-}
-
 .fade.in {
     opacity: 1;
 }
@@ -2573,11 +2562,6 @@ $picker-emojis-per-row: 7 !default;
             line-height: $picker-emoji-button-size;
             font-size: $picker-emoji-button-font-size;
             overflow: hidden;
-
-            @include hover-focus {
-                color: inherit;
-                text-decoration: none;
-            }
         }
     }
 
@@ -2839,6 +2823,48 @@ body.dragging {
     cursor: move;
 }
 
+.dropzone-container {
+    cursor: pointer;
+
+    .dropzone {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        border: 2px dashed $filemanager-dnd-border-color;
+        border-radius: 0.5rem;
+
+        &.dragover {
+            border: 2px dashed $filemanager-dnd-upload-over-border-color;
+        }
+    }
+
+    .dropzone-icon {
+        color: $gray-500;
+
+        .icon {
+            font-size: 6em;
+            width: auto;
+            height: auto;
+            max-width: initial;
+            max-height: initial;
+            margin-right: 0;
+        }
+    }
+
+    .dropzone-sr-only-focusable {
+        &:active,
+        &:focus {
+            outline: 0;
+            box-shadow: $input-btn-focus-box-shadow;
+            z-index: $zindex-popover;
+            position: relative;
+            background: $sr-only-active-bg;
+            padding: 7px;
+        }
+    }
+}
+
 // Generic classes reactive components can use.
 
 .overlay-preview {
@@ -2894,7 +2920,8 @@ body.dragging {
 .collapse-list {
     .collapse-list-item {
         padding: $collapse-list-item-padding-y $collapse-list-item-padding-x;
-        @include hover-focus() {
+        &:hover,
+        &:focus {
             background-color: $collapse-list-item-hover-bg;
             border-color: $collapse-list-item-hover-border;
         }
@@ -3051,9 +3078,6 @@ blockquote {
 /* Showmore component */
 .showmore-container {
     &.collapsed {
-        .collapsed-content {
-            display: block;
-        }
         .expanded-content {
             display: none;
         }
@@ -3061,9 +3085,6 @@ blockquote {
     &:not(.collapsed) {
         .collapsed-content {
             display: none;
-        }
-        .expanded-content {
-            display: block;
         }
     }
     button {
@@ -3082,14 +3103,16 @@ blockquote {
 .usersearchdropdown,
 .gradesearchdropdown,
 .groupsearchdropdown {
-    max-width: 350px;
-    .searchresultitemscontainer {
-        max-height: 170px;
-        overflow: auto;
-        /* stylelint-disable declaration-no-important */
-        img {
-            height: 48px !important;
-            width: 48px !important;
+    &.dropdown-menu {
+        width: 350px;
+        .searchresultitemscontainer {
+            max-height: 170px;
+            overflow: auto;
+            /* stylelint-disable declaration-no-important */
+            img {
+                height: 48px !important;
+                width: 48px !important;
+            }
         }
     }
 }
@@ -3112,4 +3135,9 @@ blockquote {
     i.icon {
         vertical-align: middle;
     }
+}
+
+/* General card customisations. */
+.card.active {
+    border-color: $gray-500;
 }

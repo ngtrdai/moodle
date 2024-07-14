@@ -32,7 +32,7 @@ class locale_test extends \advanced_testcase {
      * @covers ::check_locale_availability
      * @return void
      */
-    public function test_check_locale_availability() {
+    public function test_check_locale_availability(): void {
         // Create a mock of set_locale() method to simulate :
         // - first setlocale() call which backup current locale
         // - second setlocale() call which try to set new 'es' locale
@@ -79,12 +79,11 @@ class locale_test extends \advanced_testcase {
      * @param string $set locale string to be set.
      * @param string $ret expected results returned after setting the locale.
      */
-    public function test_set_locale(string $set, string $ret) {
+    public function test_set_locale(string $set, string $ret): void {
         // Make set_locale() public.
         $loc = new locale();
         $rc = new \ReflectionClass(locale::class);
         $rm = $rc->getMethod('set_locale');
-        $rm->setAccessible(true);
 
         // Capture current locale for later restore (funnily, using the set_locale() method itself.
         $originallocale = $rm->invokeArgs($loc, [LC_ALL, 0]);

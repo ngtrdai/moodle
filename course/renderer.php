@@ -101,7 +101,7 @@ class core_course_renderer extends plugin_renderer_base {
      * @param array $ignored argument ignored
      * @return string
      */
-    public final function course_category_tree(array $ignored) {
+    final public function course_category_tree(array $ignored) {
         debugging('Function core_course_renderer::course_category_tree() is deprecated, please use frontpage_combo_list()', DEBUG_DEVELOPER);
         return $this->frontpage_combo_list();
     }
@@ -115,7 +115,7 @@ class core_course_renderer extends plugin_renderer_base {
      * @param int $depth
      * @return string
      */
-    protected final function course_category_tree_category(stdClass $category, $depth=1) {
+    final protected function course_category_tree_category(stdClass $category, $depth=1) {
         debugging('Function core_course_renderer::course_category_tree_category() is deprecated', DEBUG_DEVELOPER);
         return '';
     }
@@ -141,9 +141,10 @@ class core_course_renderer extends plugin_renderer_base {
      * Build the HTML for the module chooser javascript popup.
      *
      * @param int $courseid The course id to fetch modules for.
+     * @param int|null $sectionnum The section number to fetch modules for.
      * @return string
      */
-    public function course_activitychooser($courseid) {
+    public function course_activitychooser($courseid, ?int $sectionnum = null) {
 
         if (!$this->page->requires->should_create_one_time_item_now('core_course_modchooser')) {
             return '';
@@ -153,7 +154,7 @@ class core_course_renderer extends plugin_renderer_base {
         $chooserconfig = (object) [
             'tabmode' => get_config('core', 'activitychoosertabmode'),
         ];
-        $this->page->requires->js_call_amd('core_course/activitychooser', 'init', [$courseid, $chooserconfig]);
+        $this->page->requires->js_call_amd('core_course/activitychooser', 'init', [$courseid, $chooserconfig, $sectionnum]);
 
         return '';
     }
@@ -225,13 +226,13 @@ class core_course_renderer extends plugin_renderer_base {
         }
 
         $data = [
-            'sectionid' => $section,
+            'sectionnum' => $section,
             'sectionreturn' => $sectionreturn
         ];
         $ajaxcontrol = $this->render_from_template('course/activitychooserbutton', $data);
 
         // Load the JS for the modal.
-        $this->course_activitychooser($course->id);
+        $this->course_activitychooser($course->id, $section);
 
         return $ajaxcontrol;
     }
@@ -377,8 +378,8 @@ class core_course_renderer extends plugin_renderer_base {
         }
 
         $altname = get_accesshide(' ' . $cm->modfullname);
-        $name = html_writer::empty_tag('img', array('src' => $cm->get_icon_url(),
-                'class' => 'iconlarge activityicon', 'alt' => ' ', 'role' => 'presentation')) .
+        $name = html_writer::empty_tag('img', ['src' => $cm->get_icon_url(),
+                'class' => 'activityicon', 'alt' => '']) .
             html_writer::tag('span', ' '.$cm->get_formatted_name() . $altname, array('class' => 'instancename'));
         $formattedinfo = \core_availability\info::format_info($cm->availableinfo, $cm->get_course());
         return html_writer::div($name, 'activityinstance-error') .

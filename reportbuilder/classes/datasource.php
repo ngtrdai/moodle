@@ -48,13 +48,6 @@ abstract class datasource extends base {
     private $activeconditions;
 
     /**
-     * Return user friendly name of the datasource
-     *
-     * @return string
-     */
-    abstract public static function get_name(): string;
-
-    /**
      * Add columns from the given entity name to be available to use in a custom report
      *
      * Wildcard matching is supported with '*' in both $include and $exclude, e.g. ['customfield*']
@@ -407,10 +400,16 @@ abstract class datasource extends base {
 
     /**
      * Adds all columns/filters/conditions from all the entities added to the report at once
+     *
+     * @param string[] $entitynames If specified, then only these entity elements are added (otherwise all)
      */
-    final protected function add_all_from_entities(): void {
+    final protected function add_all_from_entities(array $entitynames = []): void {
         foreach ($this->get_entities() as $entity) {
-            $this->add_all_from_entity($entity->get_entity_name());
+            $entityname = $entity->get_entity_name();
+            if (!empty($entitynames) && array_search($entityname, $entitynames) === false) {
+                continue;
+            }
+            $this->add_all_from_entity($entityname);
         }
     }
 

@@ -1,10 +1,13 @@
-Feature: Prepare scenario for testing
+Feature: Fixture to prepare scenario for testing
   Scenario: Create course content
-    Given the following "course" exists:
+    Given the following config values are set as admin:
+      | sendcoursewelcomemessage | 0 | enrol_manual |
+    And the following "course" exists:
       | fullname         | Course test |
       | shortname        | C1          |
       | category         | 0           |
       | numsections      | 3           |
+      | initsections     | 1           |
     And the following "activities" exist:
       | activity | name              | intro                       | course   | idnumber | section | visible |
       | assign   | Activity sample 1 | Test assignment description | C1       | sample1  | 1       | 1       |

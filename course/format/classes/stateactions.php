@@ -423,7 +423,7 @@ class stateactions {
      * @param int[] $ids section ids
      * @param int $visible the new visible value
      */
-    protected function set_section_visibility (
+    protected function set_section_visibility(
         stateupdates $updates,
         stdClass $course,
         array $ids,
@@ -705,6 +705,10 @@ class stateactions {
         $this->validate_cms($course, $ids, __FUNCTION__, ['moodle/course:manageactivities']);
         $modinfo = get_fast_modinfo($course);
         $cms = $this->get_cm_info($modinfo, $ids);
+        $cms = $this->filter_cms_with_section_delegate($cms);
+        if (empty($cms)) {
+            return;
+        }
         list($insql, $inparams) = $DB->get_in_or_equal(array_keys($cms), SQL_PARAMS_NAMED);
         $DB->set_field_select('course_modules', 'indent', $indent, "id $insql", $inparams);
         rebuild_course_cache($course->id, false, true);
@@ -808,7 +812,7 @@ class stateactions {
      * @param int[] $ids the course modules $ids
      * @return cm_info[] the extracted cm_info objects
      */
-    protected function get_cm_info (course_modinfo $modinfo, array $ids): array {
+    protected function get_cm_info(course_modinfo $modinfo, array $ids): array {
         $cms = [];
         foreach ($ids as $cmid) {
             $cms[$cmid] = $modinfo->get_cm($cmid);
@@ -832,7 +836,7 @@ class stateactions {
     }
 
     /**
-     * Update the course content section collapsed value.
+     * Update the course content section state to collapse.
      *
      * @param stateupdates $updates the affected course elements track
      * @param stdClass $course the course object
@@ -845,17 +849,40 @@ class stateactions {
         stdClass $course,
         array $ids = [],
         ?int $targetsectionid = null,
-        ?int $targetcmid = null
+        ?int $targetcmid = null,
     ): void {
         if (!empty($ids)) {
             $this->validate_sections($course, $ids, __FUNCTION__);
         }
         $format = course_get_format($course->id);
-        $format->set_sections_preference('contentcollapsed', $ids);
+        $format->add_section_preference_ids('contentcollapsed', $ids);
     }
 
     /**
-     * Update the course index section collapsed value.
+     * Update the course content section state to expand.
+     *
+     * @param stateupdates $updates the affected course elements track
+     * @param stdClass $course the course object
+     * @param int[] $ids the collapsed section ids
+     * @param int|null $targetsectionid not used
+     * @param int|null $targetcmid not used
+     */
+    public function section_content_expanded(
+        stateupdates $updates,
+        stdClass $course,
+        array $ids = [],
+        ?int $targetsectionid = null,
+        ?int $targetcmid = null,
+    ): void {
+        if (!empty($ids)) {
+            $this->validate_sections($course, $ids, __FUNCTION__);
+        }
+        $format = course_get_format($course->id);
+        $format->remove_section_preference_ids('contentcollapsed', $ids);
+    }
+
+    /**
+     * Update the course index section state to collapse.
      *
      * @param stateupdates $updates the affected course elements track
      * @param stdClass $course the course object
@@ -868,13 +895,36 @@ class stateactions {
         stdClass $course,
         array $ids = [],
         ?int $targetsectionid = null,
-        ?int $targetcmid = null
+        ?int $targetcmid = null,
     ): void {
         if (!empty($ids)) {
             $this->validate_sections($course, $ids, __FUNCTION__);
         }
         $format = course_get_format($course->id);
-        $format->set_sections_preference('indexcollapsed', $ids);
+        $format->add_section_preference_ids('indexcollapsed', $ids);
+    }
+
+    /**
+     * Update the course index section state to expand.
+     *
+     * @param stateupdates $updates the affected course elements track
+     * @param stdClass $course the course object
+     * @param int[] $ids the collapsed section ids
+     * @param int|null $targetsectionid not used
+     * @param int|null $targetcmid not used
+     */
+    public function section_index_expanded(
+        stateupdates $updates,
+        stdClass $course,
+        array $ids = [],
+        ?int $targetsectionid = null,
+        ?int $targetcmid = null,
+    ): void {
+        if (!empty($ids)) {
+            $this->validate_sections($course, $ids, __FUNCTION__);
+        }
+        $format = course_get_format($course->id);
+        $format->remove_section_preference_ids('indexcollapsed', $ids);
     }
 
     /**
@@ -1023,6 +1073,26 @@ class stateactions {
         if (!empty($sectionids)) {
             $this->section_state($updates, $course, $sectionids);
         }
+    }
+
+    /**
+     * Remove course modules with section delegate from a list.
+     *
+     * @param cm_info[] $cms the list of course modules to filter.
+     * @return cm_info[] the filtered list of course modules indexed by id.
+     */
+    protected function filter_cms_with_section_delegate(array $cms): array {
+        $filtered = [];
+        $modules = [];
+        foreach ($cms as $cm) {
+            if (!isset($modules[$cm->module])) {
+                $modules[$cm->module] = sectiondelegate::has_delegate_class('mod_' . $cm->modname);
+            }
+            if (!$modules[$cm->module]) {
+                $filtered[$cm->id] = $cm;
+            }
+        }
+        return $filtered;
     }
 
     /**

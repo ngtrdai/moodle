@@ -1121,7 +1121,7 @@ class calendar_information {
      *                                  If a courseid is specified, this value is ignored.
      * @return  calendar_information
      */
-    public static function create($time, int $courseid, int $categoryid = null) : calendar_information {
+    public static function create($time, int $courseid, int $categoryid = null): calendar_information {
         $calendar = new static(0, 0, 0, $time);
         if ($courseid != SITEID && !empty($courseid)) {
             // Course ID must be valid and existing.
@@ -3585,6 +3585,18 @@ function calendar_get_view(\calendar_information $calendar, $view, $includenavig
             $data->showviewselector = true;
         } else if ($view == "upcoming_mini") {
             $template = 'core_calendar/calendar_upcoming_mini';
+        }
+    }
+
+    // Check if $data has events.
+    if (isset($data->events)) {
+        // Let's check and sanitize all "name" in $data->events before it's sent to front end.
+        foreach ($data->events as $d) {
+            $name = $d->name ?? null;
+            // Encode special characters if our decoded name does not match the original name.
+            if ($name && (html_entity_decode($name) !== $name)) {
+                $d->name = htmlspecialchars(html_entity_decode($name), ENT_QUOTES, 'utf-8');
+            }
         }
     }
 

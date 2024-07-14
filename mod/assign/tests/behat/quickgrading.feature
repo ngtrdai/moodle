@@ -30,7 +30,9 @@ Feature: In an assignment, teachers grade multiple students on one page
 
     And I am on the "Test assignment name" Activity page logged in as teacher1
     And I follow "View all submissions"
-    When I click on "Grade" "link" in the "Student 1" "table_row"
+    When I change window size to "large"
+    And I click on "Grade" "link" in the "Student 1" "table_row"
+    And I change window size to "medium"
     And I press "Save changes"
     And I am on the "Test assignment name" "assign activity" page
     Then I should see "1" in the "Needs grading" "table_row"
@@ -112,7 +114,6 @@ Feature: In an assignment, teachers grade multiple students on one page
     And I should not see "1337"
     And I am on the "Test assignment name" "assign activity" page logged in as teacher1
     And I follow "View all submissions"
-    And I click on "Hide User picture" "link"
     And I click on "Hide Full name" "link"
     And I click on "Hide Email address" "link"
     And I click on "Hide Status" "link"

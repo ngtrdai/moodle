@@ -462,7 +462,7 @@ class meeting {
             );
         }
         if ((boolean) config::get('recordingready_enabled')) {
-            $metadata['bn-recording-ready-url'] = $this->instance->get_record_ready_url()->out(false);
+            $metadata['bbb-recording-ready-url'] = $this->instance->get_record_ready_url()->out(false);
         }
         if ((boolean) config::get('meetingevents_enabled')) {
             $metadata['analytics-callback-url'] = $this->instance->get_meeting_event_notification_url()->out(false);
@@ -482,7 +482,7 @@ class meeting {
      * @param object $data
      * @return string
      */
-    public static function meeting_events(instance $instance, object $data):  string {
+    public static function meeting_events(instance $instance, object $data): string {
         $bigbluebuttonbn = $instance->get_instance_data();
         // Validate that the bigbluebuttonbn activity corresponds to the meeting_id received.
         $meetingidelements = explode('[', $data->{'meeting_id'});

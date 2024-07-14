@@ -28,7 +28,7 @@ use core_reportbuilder\local\filters\select;
 use core_reportbuilder\local\filters\text;
 use core_reportbuilder\local\report\column;
 use core_reportbuilder\local\report\filter;
-use core_course\reportbuilder\datasource\courses;
+use core_course\reportbuilder\datasource\{categories, courses};
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -43,7 +43,7 @@ require_once("{$CFG->dirroot}/reportbuilder/tests/helpers.php");
  * @copyright   2021 David Matamoros <davidmc@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class custom_fields_test extends core_reportbuilder_testcase {
+final class custom_fields_test extends core_reportbuilder_testcase {
 
     /**
      * Generate custom fields, one of each type
@@ -97,46 +97,54 @@ class custom_fields_test extends core_reportbuilder_testcase {
         $this->assertCount(5, $columns);
         $this->assertContainsOnlyInstancesOf(column::class, $columns);
 
-        [$column0, $column1, $column2, $column3, $column4] = $columns;
-        $this->assertEqualsCanonicalizing(['Text', 'Textarea', 'Checkbox', 'Date', 'Select'], [
-            $column0->get_title(), $column1->get_title(), $column2->get_title(), $column3->get_title(), $column4->get_title()
-        ]);
+        // Column titles.
+        $this->assertEquals(
+            ['Text', 'Textarea', 'Checkbox', 'Date', 'Select'],
+            array_map(fn(column $column) => $column->get_title(), $columns)
+        );
 
-        $this->assertEquals(column::TYPE_TEXT, $column0->get_type());
-        $this->assertEquals('course', $column0->get_entity_name());
-        $this->assertStringStartsWith('LEFT JOIN {customfield_data}', $column0->get_joins()[0]);
-        // Column of type TEXT is sortable.
-        $this->assertTrue($column0->get_is_sortable());
+        // Column types.
+        $this->assertEquals(
+            [column::TYPE_TEXT, column::TYPE_LONGTEXT, column::TYPE_BOOLEAN, column::TYPE_TIMESTAMP, column::TYPE_TEXT],
+            array_map(fn(column $column) => $column->get_type(), $columns)
+        );
+
+        // Column sortable.
+        $this->assertEquals(
+            [true, false, true, true, true],
+            array_map(fn(column $column) => $column->get_is_sortable(), $columns)
+        );
     }
 
     /**
-     * Test for add_join
+     * Test that joins added to the custom fields helper are present in its columns/filters
      */
     public function test_add_join(): void {
         $this->resetAfterTest();
 
         $customfields = $this->generate_customfields();
-        $columns = $customfields->get_columns();
-        $this->assertCount(1, ($columns[0])->get_joins());
 
+        // We always join on the customfield data table.
+        $columnjoins = $customfields->get_columns()[0]->get_joins();
+        $this->assertCount(1, $columnjoins);
+        $this->assertStringStartsWith('LEFT JOIN {customfield_data}', $columnjoins[0]);
+
+        $filterjoins = $customfields->get_filters()[0]->get_joins();
+        $this->assertCount(1, $filterjoins);
+        $this->assertStringStartsWith('LEFT JOIN {customfield_data}', $filterjoins[0]);
+
+        // Add additional join.
         $customfields->add_join('JOIN {test} t ON t.id = id');
-        $columns = $customfields->get_columns();
-        $this->assertCount(2, ($columns[0])->get_joins());
-    }
 
-    /**
-     * Test for add_joins
-     */
-    public function test_add_joins(): void {
-        $this->resetAfterTest();
+        $columnjoins = $customfields->get_columns()[0]->get_joins();
+        $this->assertCount(2, $columnjoins);
+        $this->assertEquals('JOIN {test} t ON t.id = id', $columnjoins[0]);
+        $this->assertStringStartsWith('LEFT JOIN {customfield_data}', $columnjoins[1]);
 
-        $customfields = $this->generate_customfields();
-        $columns = $customfields->get_columns();
-        $this->assertCount(1, ($columns[0])->get_joins());
-
-        $customfields->add_joins(['JOIN {test} t ON t.id = id', 'JOIN {test2} t2 ON t2.id = id']);
-        $columns = $customfields->get_columns();
-        $this->assertCount(3, ($columns[0])->get_joins());
+        $filterjoins = $customfields->get_filters()[0]->get_joins();
+        $this->assertCount(2, $filterjoins);
+        $this->assertEquals('JOIN {test} t ON t.id = id', $filterjoins[0]);
+        $this->assertStringStartsWith('LEFT JOIN {customfield_data}', $filterjoins[1]);
     }
 
     /**
@@ -151,10 +159,11 @@ class custom_fields_test extends core_reportbuilder_testcase {
         $this->assertCount(5, $filters);
         $this->assertContainsOnlyInstancesOf(filter::class, $filters);
 
-        [$filter0, $filter1, $filter2, $filter3, $filter4] = $filters;
-        $this->assertEqualsCanonicalizing(['Text', 'Textarea', 'Checkbox', 'Date', 'Select'], [
-            $filter0->get_header(), $filter1->get_header(), $filter2->get_header(), $filter3->get_header(), $filter4->get_header()
-        ]);
+        // Filter titles.
+        $this->assertEquals(
+            ['Text', 'Textarea', 'Checkbox', 'Date', 'Select'],
+            array_map(fn(filter $filter) => $filter->get_header(), $filters)
+        );
     }
 
     /**
@@ -177,7 +186,7 @@ class custom_fields_test extends core_reportbuilder_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
         $report = $generator->create_report(['name' => 'Courses', 'source' => courses::class, 'default' => 0]);
 
-        // Add user profile field columns to the report.
+        // Add custom field columns to the report.
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'course:fullname']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'course:customfield_text']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'course:customfield_textarea']);
@@ -198,11 +207,39 @@ class custom_fields_test extends core_reportbuilder_testcase {
     }
 
     /**
+     * Test that adding custom field columns to report returns expected default values for fields
+     */
+    public function test_custom_report_content_column_defaults(): void {
+        $this->resetAfterTest();
+
+        $this->generate_customfields();
+
+        $category = $this->getDataGenerator()->create_category(['name' => 'Zebras']);
+        $course = $this->getDataGenerator()->create_course(['category' => $category->id]);
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+        $report = $generator->create_report(['name' => 'Categories', 'source' => categories::class, 'default' => 0]);
+
+        // Add custom field columns to the report.
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'course_category:name',
+            'sortenabled' => 1]);
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'course:fullname']);
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'course:customfield_select']);
+
+        $content = $this->get_custom_report_content($report->get('id'));
+        $this->assertEquals([
+            ['Category 1', '', ''],
+            [$category->name, $course->fullname, 'Cat'],
+        ], array_map('array_values', $content));
+    }
+
+    /**
      * Data provider for {@see test_custom_report_filter}
      *
      * @return array[]
      */
-    public function custom_report_filter_provider(): array {
+    public static function custom_report_filter_provider(): array {
         return [
             'Filter by text custom field' => ['course:customfield_text', [
                 'course:customfield_text_operator' => text::IS_EQUAL_TO,

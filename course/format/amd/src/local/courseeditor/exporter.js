@@ -112,6 +112,10 @@ export default class {
             ...cminfo,
             isactive: false,
         };
+        if (cminfo.hasdelegatedsection) {
+            const sectioninfo = state.section.get(cminfo.delegatesectionid);
+            cm.sectioninfo = this.section(state, sectioninfo);
+        }
         return cm;
     }
 
@@ -144,7 +148,7 @@ export default class {
             id: cminfo.id,
             name: cminfo.name,
             sectionid: cminfo.sectionid,
-            delegatesection: cminfo.delegatesection,
+            hasdelegatedsection: cminfo.hasdelegatedsection,
             nextcmid,
         };
     }
@@ -210,7 +214,10 @@ export default class {
         if (cminfo.completionstate !== undefined) {
             data.state = cminfo.completionstate;
             data.hasstate = true;
-            const statename = this.COMPLETIONS[cminfo.completionstate] ?? 'NaN';
+            let statename = this.COMPLETIONS[cminfo.completionstate] ?? 'NaN';
+            if (cminfo.isoverallcomplete !== undefined && cminfo.isoverallcomplete === true) {
+                statename = 'complete';
+            }
             data[`is${statename}`] = true;
         }
         return data;

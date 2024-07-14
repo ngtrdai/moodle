@@ -93,7 +93,7 @@ Feature: We can use Single view
     And I press "Save"
     Then I should see "Grades were set for 1 items"
     And the following should exist in the "generaltable" table:
-        | First name (Alternate name) Last name | Grade |
+        | User full name                | Grade     |
         | Ann, Jill, Grainne, Beauchamp | Very good |
     And I am on the "Course 1" "grades > Single view > View" page logged in as "teacher2"
     And I click on "Users" "link" in the ".page-toggler" "css_element"
@@ -150,9 +150,9 @@ Feature: We can use Single view
     Given I click on user menu "Grainne Beauchamp"
     And I choose "Single view for this user" in the open action menu
     Then I should see "Gronya,Beecham"
-    And I follow "Nee,Chumlee"
+    And I click on "Nee,Chumlee" "link" in the ".stickyfooter" "css_element"
     Then I should see "Nee,Chumlee"
-    And I follow "Gronya,Beecham"
+    And I click on "Gronya,Beecham" "link" in the ".stickyfooter" "css_element"
     Then I should see "Gronya,Beecham"
     And I open the action menu in "Test assignment four" "table_row"
     And I choose "Show all grades" in the open action menu

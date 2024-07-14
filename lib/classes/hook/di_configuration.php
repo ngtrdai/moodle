@@ -17,6 +17,7 @@
 namespace core\hook;
 
 use DI\ContainerBuilder;
+use core\attribute\label;
 
 /**
  * Allow for init-time configuration of the Dependency Injection container.
@@ -25,13 +26,15 @@ use DI\ContainerBuilder;
  * @copyright  2023 Andrew Lyons <andrew@nicols.co.uk>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class di_configuration implements described_hook {
+#[label('A hook to allow per-component configuration of the DI container.')]
+class di_configuration {
     /**
      * Create the Dependency Injection configuration hook instance.
      *
      * @param ContainerBuilder $builder
      */
     public function __construct(
+        /** @var ContainerBuilder The PHP-DI Builder */
         protected ContainerBuilder $builder,
     ) {
     }
@@ -77,13 +80,5 @@ class di_configuration implements described_hook {
         ]);
 
         return $this;
-    }
-
-    public static function get_hook_description(): string {
-        return 'The DI container, which allows plugins to register any service requiring configuration or initialisation.';
-    }
-
-    public static function get_hook_tags(): array {
-        return [];
     }
 }
