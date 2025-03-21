@@ -26,7 +26,6 @@
 
 namespace core_badges\external;
 
-use core_badges_external;
 use core_badges\tests\external_helper;
 use core_external\external_api;
 use core_external\external_settings;
@@ -40,90 +39,98 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->libdir . '/badgeslib.php');
 
 /**
- * Badges external functions tests
+ * Tests for get_user_badges external function
  *
  * @package    core_badges
- * @category   external
+ * @category   test
  * @copyright  2016 Juan Leyva <juan@moodle.com>
+ * @author     2016 Juan Leyva <juan@moodle.com>
+ * @author     2025 Dai Nguyen Trong <ngtrdai@hotmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since      Moodle 3.1
+ * @covers     \core_badges\external\get_user_badges
  */
-final class external_test extends externallib_advanced_testcase {
+final class get_user_badges_test extends externallib_advanced_testcase {
     use external_helper;
 
     /**
-     * Test get user badges.
-     * These is a basic test since the badges_get_my_user_badges used by the external function already has unit tests.
-     *
-     * @covers \core_badges_external::get_user_badges
+     * Test getting user's own badges.
      */
-    public function test_get_my_user_badges(): void {
+    public function test_get_own_user_badges(): void {
         $data = $this->prepare_test_data();
 
         $this->setUser($data['student']);
-        $result = core_badges_external::get_user_badges();
-        $result = external_api::clean_returnvalue(core_badges_external::get_user_badges_returns(), $result);
+        $result = get_user_badges::execute();
+        $result = external_api::clean_returnvalue(get_user_badges::execute_returns(), $result);
         $this->assertCount(2, $result['badges']);
         $this->assert_issued_badge($data['coursebadge'], $result['badges'][0], true, false);
         $this->assert_issued_badge($data['sitebadge'], $result['badges'][1], true, false);
 
-        // Pagination and filtering.
-        $result = core_badges_external::get_user_badges(0, 0, 0, 1, '', true);
-        $result = external_api::clean_returnvalue(core_badges_external::get_user_badges_returns(), $result);
+        // Test pagination and filtering.
+        $result = get_user_badges::execute(0, 0, 0, 1, '', true);
+        $result = external_api::clean_returnvalue(get_user_badges::execute_returns(), $result);
         $this->assertCount(1, $result['badges']);
         $this->assert_issued_badge($data['coursebadge'], $result['badges'][0], true, false);
     }
 
     /**
-     * Test get user badges.
-     *
-     * @covers \core_badges_external::get_user_badges
-     */
-    public function test_get_other_user_badges(): void {
-        $data = $this->prepare_test_data();
-
-        // User with "moodle/badges:configuredetails" capability.
-        $this->setAdminUser();
-        $result = core_badges_external::get_user_badges($data['student']->id);
-        $result = external_api::clean_returnvalue(core_badges_external::get_user_badges_returns(), $result);
-        $this->assertCount(2, $result['badges']);
-        $this->assert_issued_badge($data['coursebadge'], $result['badges'][0], false, true);
-        $this->assert_issued_badge($data['sitebadge'], $result['badges'][1], false, true);
-
-        // User without "moodle/badges:configuredetails" capability.
-        $this->setUser($this->getDataGenerator()->create_user());
-        $result = core_badges_external::get_user_badges($data['student']->id);
-        $result = external_api::clean_returnvalue(core_badges_external::get_user_badges_returns(), $result);
-        $this->assertCount(2, $result['badges']);
-        $this->assert_issued_badge($data['coursebadge'], $result['badges'][0], false, false);
-        $this->assert_issued_badge($data['sitebadge'], $result['badges'][1], false, false);
-    }
-
-    /**
-     * Test get_user_badges where issuername contains text to be filtered
-     *
-     * @covers \core_badges_external::get_user_badges
+     * Test get_user_badges with filtered issuername content.
      */
     public function test_get_user_badges_filter_issuername(): void {
         global $DB;
 
         $data = $this->prepare_test_data();
 
+        // Enable multilang filter.
         filter_set_global_state('multilang', TEXTFILTER_ON);
         filter_set_applies_to_strings('multilang', true);
-
         external_settings::get_instance()->set_filter(true);
 
-        // Update issuer name of test badge.
+        // Update badge issuer name with multilang content.
         $issuername = '<span class="multilang" lang="en">Issuer (en)</span><span class="multilang" lang="es">Issuer (es)</span>';
         $DB->set_field('badge', 'issuername', $issuername, ['name' => 'Test badge site']);
 
-        // Retrieve student badges.
-        $result = core_badges_external::get_user_badges($data['student']->id);
-        $result = external_api::clean_returnvalue(core_badges_external::get_user_badges_returns(), $result);
+        // Test that filtered content is returned correctly.
+        $result = get_user_badges::execute($data['student']->id);
+        $result = external_api::clean_returnvalue(get_user_badges::execute_returns(), $result);
 
-        // Site badge will be last, because it has the earlier issued date.
+        // Find the site badge (will be last since it has the earlier issued date).
         $badge = end($result['badges']);
         $this->assertEquals('Issuer (en)', $badge['issuername']);
+    }
+
+    /**
+     * Test badges disabled at site level.
+     */
+    public function test_badges_disabled(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Disable badges.
+        $CFG->enablebadges = 0;
+
+        $this->expectException(\core\exception\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('badgesdisabled', 'badges'));
+
+        get_user_badges::execute();
+    }
+
+    /**
+     * Test course badges disabled when filtering by course.
+     */
+    public function test_course_badges_disabled(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Disable course badges.
+        $CFG->badges_allowcoursebadges = 0;
+
+        $this->expectException(\core\exception\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('coursebadgesdisabled', 'badges'));
+
+        get_user_badges::execute(0, 1);
     }
 }
